@@ -38,13 +38,15 @@ jobs:
 
             - name: Install gRPC C# plugin
               env:
-                  GRPC_VERSION: "1.63.0"
+                  GRPC_TOOLS_VERSION: "2.65.0"
               run: |
-                  curl -sSL "https://github.com/grpc/grpc/releases/download/v${GRPC_VERSION}/grpc_csharp_plugin-v${GRPC_VERSION}-linux-x64.zip" -o /tmp/grpc_csharp_plugin.zip
-                  unzip -o /tmp/grpc_csharp_plugin.zip -d /tmp/grpc_csharp_plugin
-                  sudo mv /tmp/grpc_csharp_plugin/grpc_csharp_plugin /usr/local/bin/grpc_csharp_plugin
+                  TMP_DIR="$(mktemp -d)"
+                  NUGET_PACKAGE_URL="https://www.nuget.org/api/v2/package/Grpc.Tools/${GRPC_TOOLS_VERSION}"
+                  curl -sSL "$NUGET_PACKAGE_URL" -o "$TMP_DIR/grpc.tools.nupkg"
+                  unzip -q "$TMP_DIR/grpc.tools.nupkg" "tools/linux_x64/grpc_csharp_plugin" -d "$TMP_DIR"
+                  sudo mv "$TMP_DIR/tools/linux_x64/grpc_csharp_plugin" /usr/local/bin/grpc_csharp_plugin
                   sudo chmod +x /usr/local/bin/grpc_csharp_plugin
-                  rm -rf /tmp/grpc_csharp_plugin /tmp/grpc_csharp_plugin.zip
+                  rm -rf "$TMP_DIR"
 
             - name: Make generator executable
               run: chmod +x scripts/generate_protos.sh
