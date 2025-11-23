@@ -33,4 +33,10 @@
   <Target Name="EnsureGeneratedSources" BeforeTargets="Compile">
     <Error Condition="!Exists('$(GeneratedCSharpDir)')" Text="Generated sources not found. Run scripts/generate_protos.sh before building." />
   </Target>
+
+  <ItemGroup>
+    <PackageReference Include="Google.Protobuf" Version="3.26.1" />
+    <PackageReference Include="Grpc.Core.Api" Version="2.65.0" />
+    <PackageReference Include="Grpc.Net.Client" Version="2.65.0" />
+  </ItemGroup>
 </Project>
