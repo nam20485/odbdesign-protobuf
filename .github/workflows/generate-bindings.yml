@@ -1,55 +1,122 @@
 name: Generate Protobuf SDKs
 
 on:
-  push:
-    paths:
-      - 'protoc/**'
-      - 'scripts/generate_protos.sh'
-      - '.github/workflows/generate-bindings.yml'
-  pull_request:
-    paths:
-      - 'protoc/**'
-      - 'scripts/generate_protos.sh'
-      - '.github/workflows/generate-bindings.yml'
-  workflow_dispatch:
+    push:
+        paths:
+            - "protoc/**"
+            - "scripts/generate_protos.sh"
+            - ".github/workflows/generate-bindings.yml"
+            - "src/**"
+    pull_request:
+        paths:
+            - "protoc/**"
+            - "scripts/generate_protos.sh"
+            - ".github/workflows/generate-bindings.yml"
+            - "src/**"
+    workflow_dispatch:
 
 jobs:
-  codegen:
-    name: Build language outputs
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    codegen:
+        permissions:
+            contents: read
+            packages: write
+        name: Build language outputs
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
 
-      - name: Install protoc and gRPC C++ plugin
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y protobuf-compiler protobuf-compiler-grpc unzip curl
+            - name: Set up .NET SDK
+              uses: actions/setup-dotnet@v4
+              with:
+                  dotnet-version: "8.0.x"
 
-      - name: Install gRPC C# plugin
-        env:
-          GRPC_VERSION: '1.63.0'
-        run: |
-          curl -sSL "https://github.com/grpc/grpc/releases/download/v${GRPC_VERSION}/grpc_csharp_plugin-v${GRPC_VERSION}-linux-x64.zip" -o /tmp/grpc_csharp_plugin.zip
-          unzip -o /tmp/grpc_csharp_plugin.zip -d /tmp/grpc_csharp_plugin
-          sudo mv /tmp/grpc_csharp_plugin/grpc_csharp_plugin /usr/local/bin/grpc_csharp_plugin
-          sudo chmod +x /usr/local/bin/grpc_csharp_plugin
-          rm -rf /tmp/grpc_csharp_plugin /tmp/grpc_csharp_plugin.zip
+            - name: Install protoc and gRPC C++ plugin
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y protobuf-compiler protobuf-compiler-grpc unzip curl
 
-      - name: Make generator executable
-        run: chmod +x scripts/generate_protos.sh
+            - name: Install gRPC C# plugin
+              env:
+                  GRPC_VERSION: "1.63.0"
+              run: |
+                  curl -sSL "https://github.com/grpc/grpc/releases/download/v${GRPC_VERSION}/grpc_csharp_plugin-v${GRPC_VERSION}-linux-x64.zip" -o /tmp/grpc_csharp_plugin.zip
+                  unzip -o /tmp/grpc_csharp_plugin.zip -d /tmp/grpc_csharp_plugin
+                  sudo mv /tmp/grpc_csharp_plugin/grpc_csharp_plugin /usr/local/bin/grpc_csharp_plugin
+                  sudo chmod +x /usr/local/bin/grpc_csharp_plugin
+                  rm -rf /tmp/grpc_csharp_plugin /tmp/grpc_csharp_plugin.zip
 
-      - name: Generate bindings
-        run: bash scripts/generate_protos.sh
+            - name: Make generator executable
+              run: chmod +x scripts/generate_protos.sh
 
-      - name: Upload C++ artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: protobuf-cpp
-          path: generated/cpp
+            - name: Generate bindings
+              run: bash scripts/generate_protos.sh
 
-      - name: Upload C# artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: protobuf-csharp
-          path: generated/csharp
+            - name: Determine package version
+              id: version
+              run: |
+                  VERSION="0.1.${GITHUB_RUN_NUMBER}"
+                  echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+            - name: Configure GitHub Packages source
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  dotnet nuget add source \
+                      --username "$GITHUB_ACTOR" \
+                      --password "$GITHUB_TOKEN" \
+                      --store-password-in-clear-text \
+                      --name github \
+                      "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
+
+            - name: Pack NuGet package
+              run: dotnet pack src/dotnet/OdbDesign.Protobuf/OdbDesign.Protobuf.csproj -c Release -o artifacts/nuget /p:PackageVersion=${{ steps.version.outputs.version }}
+
+            - name: Publish NuGet package
+              env:
+                  NUGET_API_KEY: ${{ secrets.GITHUB_TOKEN }}
+              run: dotnet nuget push artifacts/nuget/*.nupkg --source github --api-key "$NUGET_API_KEY" --skip-duplicate
+
+            - name: Upload C++ artifact
+              uses: actions/upload-artifact@v4
+              with:
+                  name: protobuf-cpp
+                  path: generated/cpp
+
+            - name: Upload C# artifact
+              uses: actions/upload-artifact@v4
+              with:
+                  name: protobuf-csharp
+                  path: generated/csharp
+
+    native-libs:
+        name: Native shared libs (${{ matrix.os }})
+        runs-on: ${{ matrix.os }}
+        needs: codegen
+        strategy:
+            matrix:
+                os: [ubuntu-latest, macos-latest, windows-latest]
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Download generated C++ code
+              uses: actions/download-artifact@v4
+              with:
+                  name: protobuf-cpp
+                  path: generated/cpp
+
+            - name: Configure CMake
+              run: >-
+                  cmake -S cpp/native -B build
+                  -DCMAKE_BUILD_TYPE=Release
+                  -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/artifacts/native/${{ matrix.os }}"
+
+            - name: Build native library
+              run: cmake --build build --config Release --target install
+
+            - name: Upload shared library
+              uses: actions/upload-artifact@v4
+              with:
+                  name: native-${{ matrix.os }}
+                  path: artifacts/native/${{ matrix.os }}

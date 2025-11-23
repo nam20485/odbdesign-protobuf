@@ -1,2 +1,8 @@
 # Generated protobuf code
 /generated/
+*.code-workspace
+**/bin/
+**/obj/
+/artifacts/
+build/
+*.nupkg

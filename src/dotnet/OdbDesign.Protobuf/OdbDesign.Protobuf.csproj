@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+
+    <PackageId>OdbDesign.Protobuf</PackageId>
+    <Authors>ODB Design Contributors</Authors>
+    <Company>ODB Design</Company>
+    <Description>Generated protobuf messages and gRPC service stubs for ODB++ designs.</Description>
+    <RepositoryUrl>https://github.com/nam20485/odbdesign-protobuf</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>protobuf;grpc;odb;odb++</PackageTags>
+    <PackageProjectUrl>https://github.com/nam20485/odbdesign-protobuf</PackageProjectUrl>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <IncludeBuildOutput>true</IncludeBuildOutput>
+    <VersionPrefix>0.1.0</VersionPrefix>
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+    <Deterministic>true</Deterministic>
+
+    <RepoRoot>$(MSBuildThisFileDirectory)..\..\..\</RepoRoot>
+    <GeneratedCSharpDir>$(RepoRoot)generated\csharp\</GeneratedCSharpDir>
+  </PropertyGroup>
+
+  <ItemGroup Condition="Exists('$(GeneratedCSharpDir)')">
+    <Compile Include="$(GeneratedCSharpDir)**\*.cs">
+      <Link>Generated\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </Compile>
+  </ItemGroup>
+
+  <Target Name="EnsureGeneratedSources" BeforeTargets="Compile">
+    <Error Condition="!Exists('$(GeneratedCSharpDir)')" Text="Generated sources not found. Run scripts/generate_protos.sh before building." />
+  </Target>
+</Project>
