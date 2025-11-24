@@ -21,11 +21,17 @@ if(GENERATED_CPP_SOURCES STREQUAL "")
 endif()
 
 include(FetchContent)
-set(gRPC_INSTALL ON)
-set(gRPC_BUILD_TESTS OFF)
-set(gRPC_BUILD_CSHARP_EXT OFF)
-set(gRPC_BUILD_GRPC_CSHARP_PLUGIN OFF)
 set(ABSL_PROPAGATE_CXX_STD ON)
+set(ABSL_ENABLE_INSTALL OFF CACHE BOOL "Disable Abseil install rules" FORCE)
+
+set(protobuf_BUILD_TESTS OFF CACHE BOOL "Disable protobuf tests" FORCE)
+set(protobuf_WITH_ZLIB OFF CACHE BOOL "Disable protobuf zlib dependency" FORCE)
+set(protobuf_INSTALL OFF CACHE BOOL "Disable protobuf install rules" FORCE)
+
+set(gRPC_INSTALL OFF CACHE BOOL "Disable gRPC install rules" FORCE)
+set(gRPC_BUILD_TESTS OFF CACHE BOOL "Disable gRPC tests" FORCE)
+set(gRPC_BUILD_CSHARP_EXT OFF CACHE BOOL "" FORCE)
+set(gRPC_BUILD_GRPC_CSHARP_PLUGIN OFF CACHE BOOL "" FORCE)
 
 FetchContent_Declare(
     gRPC
