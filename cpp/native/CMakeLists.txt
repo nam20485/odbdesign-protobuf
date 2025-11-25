@@ -39,36 +39,21 @@ set(gRPC_BUILD_TESTS OFF CACHE BOOL "Disable gRPC tests" FORCE)
 set(gRPC_BUILD_CSHARP_EXT OFF CACHE BOOL "" FORCE)
 set(gRPC_BUILD_GRPC_CSHARP_PLUGIN OFF CACHE BOOL "" FORCE)
 
+set(GRPC_PATCH_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/cmake/PatchCares.cmake")
+
 FetchContent_Declare(
     gRPC
     GIT_REPOSITORY https://github.com/grpc/grpc.git
     GIT_TAG v1.66.0
+    PATCH_COMMAND
+        ${CMAKE_COMMAND}
+        -DGRPC_SOURCE_DIR=<SOURCE_DIR>
+        -DCARES_MIN_VERSION=3.5
+        -DPATCH_SCRIPT_INVOKED_FROM="cpp/native/CMakeLists.txt"
+        -P "${GRPC_PATCH_SCRIPT}"
 )
 
-# Populate gRPC first so we can patch the c-ares CMakeLists.txt
-FetchContent_GetProperties(gRPC)
-if(NOT gRPC_POPULATED)
-    FetchContent_Populate(gRPC)
-    
-    # Patch c-ares CMakeLists.txt to fix CMake compatibility issue
-    # The old syntax with versions < 3.5 is not supported in newer CMake versions
-    set(CARES_CMAKE_FILE "${gRPC_SOURCE_DIR}/third_party/cares/cares/CMakeLists.txt")
-    if(EXISTS "${CARES_CMAKE_FILE}")
-        file(READ "${CARES_CMAKE_FILE}" CARES_CMAKE_CONTENT)
-        # Use regex to find and replace any cmake_minimum_required with version < 3.5
-        # Replace with version 3.5 which is the minimum supported
-        string(REGEX REPLACE 
-            "cmake_minimum_required\\(VERSION [0-9]\\.[0-4]\\)" 
-            "cmake_minimum_required(VERSION 3.5)" 
-            CARES_CMAKE_CONTENT 
-            "${CARES_CMAKE_CONTENT}")
-        file(WRITE "${CARES_CMAKE_FILE}" "${CARES_CMAKE_CONTENT}")
-        message(STATUS "Patched c-ares CMakeLists.txt for CMake compatibility")
-    endif()
-    
-    # Now add the subdirectory
-    add_subdirectory(${gRPC_SOURCE_DIR} ${gRPC_BINARY_DIR} EXCLUDE_FROM_ALL)
-endif()
+FetchContent_MakeAvailable(gRPC)
 
 set(GRPC_CPP_LIB_TARGET "")
 if(TARGET gRPC::grpc++)
