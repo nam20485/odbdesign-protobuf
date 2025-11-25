@@ -41,6 +41,15 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(gRPC)
 
+set(GRPC_CPP_LIB_TARGET "")
+if(TARGET gRPC::grpc++)
+    set(GRPC_CPP_LIB_TARGET gRPC::grpc++)
+elseif(TARGET grpc++)
+    set(GRPC_CPP_LIB_TARGET grpc++)
+else()
+    message(FATAL_ERROR "gRPC++ target not found. Ensure gRPC is available via FetchContent or find_package.")
+endif()
+
 add_library(odbdesign_protobuf_native SHARED
     ${GENERATED_CPP_SOURCES}
     src/ProtobufApi.cpp
@@ -64,7 +73,7 @@ target_include_directories(odbdesign_protobuf_native
 
 target_link_libraries(odbdesign_protobuf_native
     PUBLIC
-        gRPC::grpc++
+        ${GRPC_CPP_LIB_TARGET}
         protobuf::libprotobuf
 )
 
