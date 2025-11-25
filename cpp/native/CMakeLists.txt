@@ -21,6 +21,12 @@ if(GENERATED_CPP_SOURCES STREQUAL "")
 endif()
 
 include(FetchContent)
+
+# Set CMake policy to handle older CMakeLists.txt files in dependencies
+if(POLICY CMP0144)
+    cmake_policy(SET CMP0144 NEW)
+endif()
+
 set(ABSL_PROPAGATE_CXX_STD ON)
 set(ABSL_ENABLE_INSTALL OFF CACHE BOOL "Disable Abseil install rules" FORCE)
 
@@ -36,7 +42,7 @@ set(gRPC_BUILD_GRPC_CSHARP_PLUGIN OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
     gRPC
     GIT_REPOSITORY https://github.com/grpc/grpc.git
-    GIT_TAG v1.63.0
+    GIT_TAG v1.66.0
 )
 
 FetchContent_MakeAvailable(gRPC)
