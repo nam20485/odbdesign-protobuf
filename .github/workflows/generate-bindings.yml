@@ -7,12 +7,14 @@ on:
             - "scripts/generate_protos.sh"
             - ".github/workflows/generate-bindings.yml"
             - "src/**"
+            - "cpp/native/**"
     pull_request:
         paths:
             - "protoc/**"
             - "scripts/generate_protos.sh"
             - ".github/workflows/generate-bindings.yml"
             - "src/**"
+            - "cpp/native/**"
     workflow_dispatch:
 
 jobs:
