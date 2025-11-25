@@ -45,15 +45,18 @@ FetchContent_Declare(
     gRPC
     GIT_REPOSITORY https://github.com/grpc/grpc.git
     GIT_TAG v1.66.0
-    PATCH_COMMAND
-        ${CMAKE_COMMAND}
-        -DGRPC_SOURCE_DIR=<SOURCE_DIR>
-        -DCARES_MIN_VERSION=3.5
-        -DPATCH_SCRIPT_INVOKED_FROM="cpp/native/CMakeLists.txt"
-        -P "${GRPC_PATCH_SCRIPT}"
 )
 
-FetchContent_MakeAvailable(gRPC)
+FetchContent_GetProperties(gRPC)
+if(NOT gRPC_POPULATED)
+    FetchContent_Populate(gRPC)
+    # Patch c-ares before CMake config runs inside gRPC
+    include(${GRPC_PATCH_SCRIPT})
+    # Re-query to populate gRPC_SOURCE_DIR / gRPC_BINARY_DIR
+    FetchContent_GetProperties(gRPC)
+endif()
+
+add_subdirectory(${gRPC_SOURCE_DIR} ${gRPC_BINARY_DIR} EXCLUDE_FROM_ALL)
 
 set(GRPC_CPP_LIB_TARGET "")
 if(TARGET gRPC::grpc++)
