@@ -45,7 +45,30 @@ FetchContent_Declare(
     GIT_TAG v1.66.0
 )
 
-FetchContent_MakeAvailable(gRPC)
+# Populate gRPC first so we can patch the c-ares CMakeLists.txt
+FetchContent_GetProperties(gRPC)
+if(NOT gRPC_POPULATED)
+    FetchContent_Populate(gRPC)
+    
+    # Patch c-ares CMakeLists.txt to fix CMake compatibility issue
+    # The old syntax with versions < 3.5 is not supported in newer CMake versions
+    set(CARES_CMAKE_FILE "${gRPC_SOURCE_DIR}/third_party/cares/cares/CMakeLists.txt")
+    if(EXISTS "${CARES_CMAKE_FILE}")
+        file(READ "${CARES_CMAKE_FILE}" CARES_CMAKE_CONTENT)
+        # Use regex to find and replace any cmake_minimum_required with version < 3.5
+        # Replace with version 3.5 which is the minimum supported
+        string(REGEX REPLACE 
+            "cmake_minimum_required\\(VERSION [0-9]\\.[0-4]\\)" 
+            "cmake_minimum_required(VERSION 3.5)" 
+            CARES_CMAKE_CONTENT 
+            "${CARES_CMAKE_CONTENT}")
+        file(WRITE "${CARES_CMAKE_FILE}" "${CARES_CMAKE_CONTENT}")
+        message(STATUS "Patched c-ares CMakeLists.txt for CMake compatibility")
+    endif()
+    
+    # Now add the subdirectory
+    add_subdirectory(${gRPC_SOURCE_DIR} ${gRPC_BINARY_DIR} EXCLUDE_FROM_ALL)
+endif()
 
 set(GRPC_CPP_LIB_TARGET "")
 if(TARGET gRPC::grpc++)
