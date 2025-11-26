@@ -29,6 +29,10 @@ endif()
 
 set(ABSL_PROPAGATE_CXX_STD ON)
 set(ABSL_ENABLE_INSTALL OFF CACHE BOOL "Disable Abseil install rules" FORCE)
+# Disable SSE optimizations on ARM macOS to avoid compilation errors
+if(APPLE AND CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")
+    set(ABSL_RANDOM_HWAES_IMPL "generic" CACHE STRING "Use generic implementation on ARM macOS" FORCE)
+endif()
 
 set(protobuf_BUILD_TESTS OFF CACHE BOOL "Disable protobuf tests" FORCE)
 set(protobuf_WITH_ZLIB OFF CACHE BOOL "Disable protobuf zlib dependency" FORCE)
