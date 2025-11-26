@@ -50,8 +50,8 @@ FetchContent_Declare(
 FetchContent_GetProperties(gRPC)
 if(NOT gRPC_POPULATED)
     FetchContent_Populate(gRPC)
-    # FetchContent_Populate should set gRPC_SOURCE_DIR, but if not available,
-    # use the default FetchContent location: ${CMAKE_BINARY_DIR}/_deps/<name>-src
+    # FetchContent_Populate should set gRPC_SOURCE_DIR and gRPC_BINARY_DIR, but if not available,
+    # use the default FetchContent locations: ${CMAKE_BINARY_DIR}/_deps/<name>-src and <name>-build
     # For mixed-case "gRPC", CMake may use lowercase "grpc" in the path
     if(NOT DEFINED gRPC_SOURCE_DIR)
         # Try the default FetchContent location
@@ -62,6 +62,14 @@ if(NOT gRPC_POPULATED)
         endif()
         if(NOT EXISTS "${gRPC_SOURCE_DIR}")
             message(FATAL_ERROR "Could not determine gRPC source directory. Checked: ${CMAKE_BINARY_DIR}/_deps/grpc-src and ${CMAKE_BINARY_DIR}/_deps/gRPC-src")
+        endif()
+    endif()
+    if(NOT DEFINED gRPC_BINARY_DIR)
+        # Set binary directory to match source directory pattern
+        if(gRPC_SOURCE_DIR MATCHES "grpc-src$")
+            set(gRPC_BINARY_DIR "${CMAKE_BINARY_DIR}/_deps/grpc-build")
+        else()
+            set(gRPC_BINARY_DIR "${CMAKE_BINARY_DIR}/_deps/gRPC-build")
         endif()
     endif()
     # Set GRPC_SOURCE_DIR for PatchCares.cmake (it expects this variable name)
