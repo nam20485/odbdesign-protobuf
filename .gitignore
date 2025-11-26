@@ -6,6 +6,9 @@
 /artifacts/
 build/
 *.nupkg
+
+# OpenMemory - IDE/Assistant specific rules
+.cursor\rules\openmemory.mdc
 .clinerules/byterover-rules.md
 .kilocode/rules/byterover-rules.md
 .roo/rules/byterover-rules.md
