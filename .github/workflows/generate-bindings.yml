@@ -33,10 +33,81 @@ jobs:
               with:
                   dotnet-version: "8.0.x"
 
-            - name: Install protoc and gRPC C++ plugin
+            - name: Set up CMake
+              uses: jwlawson/actions-setup-cmake@v1.14
+              with:
+                  cmake-version: "3.27"
+
+            - name: Install build dependencies
               run: |
                   sudo apt-get update
-                  sudo apt-get install -y protobuf-compiler protobuf-compiler-grpc unzip curl
+                  sudo apt-get install -y build-essential cmake git unzip curl
+
+            - name: Build protoc and gRPC C++ plugin from source
+              run: |
+                  mkdir -p build-tools
+                  cd build-tools
+                  cmake -S ../cpp/tools -B . \
+                      -DCMAKE_BUILD_TYPE=Release
+                  
+                  # Build all dependencies first (this will build protobuf and gRPC)
+                  # Then build the specific tools we need
+                  echo "Building protoc and grpc_cpp_plugin..."
+                  
+                  # Try to build protoc target (may be named differently)
+                  if cmake --build . --target protoc 2>/dev/null; then
+                      echo "Built protoc target"
+                  else
+                      echo "protoc target not found, will search for executable"
+                  fi
+                  
+                  # Try to build grpc_cpp_plugin
+                  if cmake --build . --target grpc_cpp_plugin 2>/dev/null; then
+                      echo "Built grpc_cpp_plugin target"
+                  else
+                      echo "grpc_cpp_plugin target not found, will search for executable"
+                  fi
+                  
+                  # Build everything to ensure all dependencies are built
+                  cmake --build . --parallel $(nproc)
+                  
+                  # Find protoc - it's built as part of protobuf (gRPC dependency)
+                  echo "Searching for protoc..."
+                  PROTOC_PATH=$(find . -name "protoc" -type f -executable ! -name "*.cmake" 2>/dev/null | head -1)
+                  
+                  # Find grpc_cpp_plugin
+                  echo "Searching for grpc_cpp_plugin..."
+                  GRPC_CPP_PLUGIN_PATH=$(find . -name "grpc_cpp_plugin" -type f -executable 2>/dev/null | head -1)
+                  
+                  if [ -z "$PROTOC_PATH" ]; then
+                      echo "Error: Could not find protoc in build directory"
+                      echo "Build tree structure:"
+                      find . -type d -maxdepth 3 | head -30
+                      echo "All executables found:"
+                      find . -type f -executable 2>/dev/null | head -20
+                      exit 1
+                  fi
+                  
+                  if [ -z "$GRPC_CPP_PLUGIN_PATH" ]; then
+                      echo "Error: Could not find grpc_cpp_plugin in build directory"
+                      echo "Build tree structure:"
+                      find . -type d -maxdepth 3 | head -30
+                      echo "All executables found:"
+                      find . -type f -executable 2>/dev/null | head -20
+                      exit 1
+                  fi
+                  
+                  echo "Found protoc at: $PROTOC_PATH"
+                  echo "Found grpc_cpp_plugin at: $GRPC_CPP_PLUGIN_PATH"
+                  
+                  # Create tools directory and copy binaries
+                  mkdir -p "$GITHUB_WORKSPACE/tools/bin"
+                  cp "$PROTOC_PATH" "$GITHUB_WORKSPACE/tools/bin/protoc"
+                  cp "$GRPC_CPP_PLUGIN_PATH" "$GITHUB_WORKSPACE/tools/bin/grpc_cpp_plugin"
+                  chmod +x "$GITHUB_WORKSPACE/tools/bin/protoc"
+                  chmod +x "$GITHUB_WORKSPACE/tools/bin/grpc_cpp_plugin"
+                  
+                  echo "$GITHUB_WORKSPACE/tools/bin" >> $GITHUB_PATH
 
             - name: Install gRPC C# plugin
               env:
@@ -46,9 +117,18 @@ jobs:
                   NUGET_PACKAGE_URL="https://www.nuget.org/api/v2/package/Grpc.Tools/${GRPC_TOOLS_VERSION}"
                   curl -sSL "$NUGET_PACKAGE_URL" -o "$TMP_DIR/grpc.tools.nupkg"
                   unzip -q "$TMP_DIR/grpc.tools.nupkg" "tools/linux_x64/grpc_csharp_plugin" -d "$TMP_DIR"
-                  sudo mv "$TMP_DIR/tools/linux_x64/grpc_csharp_plugin" /usr/local/bin/grpc_csharp_plugin
-                  sudo chmod +x /usr/local/bin/grpc_csharp_plugin
+                  mkdir -p "$GITHUB_WORKSPACE/tools/bin"
+                  cp "$TMP_DIR/tools/linux_x64/grpc_csharp_plugin" "$GITHUB_WORKSPACE/tools/bin/grpc_csharp_plugin"
+                  chmod +x "$GITHUB_WORKSPACE/tools/bin/grpc_csharp_plugin"
                   rm -rf "$TMP_DIR"
+
+            - name: Verify tools are available
+              run: |
+                  which protoc
+                  which grpc_cpp_plugin
+                  which grpc_csharp_plugin
+                  protoc --version
+                  grpc_cpp_plugin --version || echo "grpc_cpp_plugin version check (may not support --version)"
 
             - name: Make generator executable
               run: chmod +x scripts/generate_protos.sh
