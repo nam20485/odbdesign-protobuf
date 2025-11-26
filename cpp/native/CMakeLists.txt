@@ -47,6 +47,7 @@ set(gRPC_BUILD_GRPC_CSHARP_PLUGIN OFF CACHE BOOL "" FORCE)
 set(gRPC_ZLIB_PROVIDER "none" CACHE STRING "Disable zlib in gRPC to avoid macOS compilation issues" FORCE)
 
 set(GRPC_PATCH_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/cmake/PatchCares.cmake")
+set(ABSEIL_PATCH_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/cmake/PatchAbseil.cmake")
 
 FetchContent_Declare(
     gRPC
@@ -79,9 +80,11 @@ if(NOT gRPC_POPULATED)
             set(gRPC_BINARY_DIR "${CMAKE_BINARY_DIR}/_deps/gRPC-build")
         endif()
     endif()
-    # Set GRPC_SOURCE_DIR for PatchCares.cmake (it expects this variable name)
+    # Set GRPC_SOURCE_DIR for patch scripts (they expect this variable name)
     set(GRPC_SOURCE_DIR "${gRPC_SOURCE_DIR}")
     include(${GRPC_PATCH_SCRIPT})
+    # Patch Abseil to disable SSE targets on ARM macOS
+    include(${ABSEIL_PATCH_SCRIPT})
     # Re-query to populate gRPC_SOURCE_DIR / gRPC_BINARY_DIR for later use
     FetchContent_GetProperties(gRPC)
 endif()
