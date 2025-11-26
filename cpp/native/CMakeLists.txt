@@ -51,6 +51,8 @@ FetchContent_GetProperties(gRPC)
 if(NOT gRPC_POPULATED)
     FetchContent_Populate(gRPC)
     # Patch c-ares before CMake config runs inside gRPC
+    # Set GRPC_SOURCE_DIR for PatchCares.cmake (it expects this variable name)
+    set(GRPC_SOURCE_DIR ${gRPC_SOURCE_DIR})
     include(${GRPC_PATCH_SCRIPT})
     # Re-query to populate gRPC_SOURCE_DIR / gRPC_BINARY_DIR
     FetchContent_GetProperties(gRPC)
