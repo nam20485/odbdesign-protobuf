@@ -91,6 +91,20 @@ endif()
 
 add_subdirectory(${gRPC_SOURCE_DIR} ${gRPC_BINARY_DIR} EXCLUDE_FROM_ALL)
 
+# On ARM macOS, remove SSE flags from the problematic Abseil target
+if(APPLE AND CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")
+    if(TARGET absl_random_internal_randen_hwaes_impl)
+        # Remove SSE compile flags from this target
+        get_target_property(TARGET_FLAGS absl_random_internal_randen_hwaes_impl COMPILE_OPTIONS)
+        if(TARGET_FLAGS)
+            list(REMOVE_ITEM TARGET_FLAGS "-msse4.1" "/arch:SSE2" "/arch:SSE")
+            set_target_properties(absl_random_internal_randen_hwaes_impl PROPERTIES COMPILE_OPTIONS "${TARGET_FLAGS}")
+        endif()
+        # Or simply exclude it from the build
+        set_target_properties(absl_random_internal_randen_hwaes_impl PROPERTIES EXCLUDE_FROM_ALL TRUE)
+    endif()
+endif()
+
 set(GRPC_CPP_LIB_TARGET "")
 if(TARGET gRPC::grpc++)
     set(GRPC_CPP_LIB_TARGET gRPC::grpc++)
