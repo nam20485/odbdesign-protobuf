@@ -73,6 +73,9 @@ jobs:
                       --name github \
                       "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
 
+            - name: Create artifacts directory
+              run: mkdir -p artifacts/nuget
+
             - name: Pack NuGet package
               run: dotnet pack src/dotnet/OdbDesign.Protobuf/OdbDesign.Protobuf.csproj -c Release -o artifacts/nuget /p:PackageVersion=${{ steps.version.outputs.version }}
 
@@ -110,13 +113,20 @@ jobs:
                   name: protobuf-cpp
                   path: generated/cpp
 
+            - name: Set up CMake
+              uses: jwlawson/actions-setup-cmake@v1.14
+              with:
+                  cmake-version: "3.27"
+
             - name: Configure CMake
-              run: >-
-                  cmake -S cpp/native -B build
-                  -DCMAKE_BUILD_TYPE=Release
-                  -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/artifacts/native/${{ matrix.os }}"
+              shell: bash
+              run: |
+                  cmake -S cpp/native -B build \
+                      -DCMAKE_BUILD_TYPE=Release \
+                      -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/artifacts/native/${{ matrix.os }}"
 
             - name: Build native library
+              shell: bash
               run: cmake --build build --config Release --target install
 
             - name: Upload shared library
