@@ -141,6 +141,7 @@ target_link_libraries(odbdesign_protobuf_native
     PUBLIC
         ${GRPC_CPP_LIB_TARGET}
         protobuf::libprotobuf
+        protobuf::libprotoc
 )
 
 set_target_properties(odbdesign_protobuf_native PROPERTIES
