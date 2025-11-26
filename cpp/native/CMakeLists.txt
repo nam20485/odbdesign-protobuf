@@ -30,7 +30,9 @@ endif()
 set(ABSL_PROPAGATE_CXX_STD ON)
 set(ABSL_ENABLE_INSTALL OFF CACHE BOOL "Disable Abseil install rules" FORCE)
 # Disable SSE optimizations on ARM macOS to avoid compilation errors
+# This must be set before FetchContent processes Abseil
 if(APPLE AND CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")
+    set(ABSL_RANDOM_INTERNAL_RANDEN_HWAES_IMPL "generic" CACHE STRING "Use generic implementation on ARM macOS" FORCE)
     set(ABSL_RANDOM_HWAES_IMPL "generic" CACHE STRING "Use generic implementation on ARM macOS" FORCE)
 endif()
 
