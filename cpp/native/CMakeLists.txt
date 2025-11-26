@@ -50,15 +50,25 @@ FetchContent_Declare(
 FetchContent_GetProperties(gRPC)
 if(NOT gRPC_POPULATED)
     FetchContent_Populate(gRPC)
-    # Re-query to get gRPC_SOURCE_DIR / gRPC_BINARY_DIR after populate
-    FetchContent_GetProperties(gRPC)
-    # Patch c-ares before CMake config runs inside gRPC
-    # Set GRPC_SOURCE_DIR for PatchCares.cmake (it expects this variable name)
+    # FetchContent_Populate should set gRPC_SOURCE_DIR, but if not available,
+    # use the default FetchContent location: ${CMAKE_BINARY_DIR}/_deps/<name>-src
+    # For mixed-case "gRPC", CMake may use lowercase "grpc" in the path
     if(NOT DEFINED gRPC_SOURCE_DIR)
-        message(FATAL_ERROR "gRPC_SOURCE_DIR not set after FetchContent_Populate")
+        # Try the default FetchContent location
+        set(gRPC_SOURCE_DIR "${CMAKE_BINARY_DIR}/_deps/grpc-src")
+        if(NOT EXISTS "${gRPC_SOURCE_DIR}")
+            # Try with exact case
+            set(gRPC_SOURCE_DIR "${CMAKE_BINARY_DIR}/_deps/gRPC-src")
+        endif()
+        if(NOT EXISTS "${gRPC_SOURCE_DIR}")
+            message(FATAL_ERROR "Could not determine gRPC source directory. Checked: ${CMAKE_BINARY_DIR}/_deps/grpc-src and ${CMAKE_BINARY_DIR}/_deps/gRPC-src")
+        endif()
     endif()
-    set(GRPC_SOURCE_DIR ${gRPC_SOURCE_DIR})
+    # Set GRPC_SOURCE_DIR for PatchCares.cmake (it expects this variable name)
+    set(GRPC_SOURCE_DIR "${gRPC_SOURCE_DIR}")
     include(${GRPC_PATCH_SCRIPT})
+    # Re-query to populate gRPC_SOURCE_DIR / gRPC_BINARY_DIR for later use
+    FetchContent_GetProperties(gRPC)
 endif()
 
 add_subdirectory(${gRPC_SOURCE_DIR} ${gRPC_BINARY_DIR} EXCLUDE_FROM_ALL)
