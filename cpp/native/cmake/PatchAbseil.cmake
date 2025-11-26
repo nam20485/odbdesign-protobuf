@@ -13,24 +13,21 @@ if(APPLE AND CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")
     
     file(READ "${ABSEIL_RANDOM_CMAKE_FILE}" ABSEIL_CONTENTS)
     
-    # Comment out or remove the absl_random_internal_randen_hwaes_impl target
+    # Comment out lines containing absl_random_internal_randen_hwaes_impl
     # This target uses SSE4.1 instructions which aren't supported on ARM
-    string(REGEX REPLACE
-        "(add_library\\(absl_random_internal_randen_hwaes_impl[^)]*\\))"
-        "# Disabled on ARM: \\1"
-        ABSEIL_CONTENTS
-        "${ABSEIL_CONTENTS}"
-    )
+    # Split into lines, process, and rejoin
+    string(REPLACE "\n" ";" ABSEIL_LINES "${ABSEIL_CONTENTS}")
+    set(MODIFIED_LINES "")
+    foreach(LINE ${ABSEIL_LINES})
+        if(LINE MATCHES "absl_random_internal_randen_hwaes_impl")
+            # Comment out this line
+            set(MODIFIED_LINES "${MODIFIED_LINES}# Disabled on ARM: ${LINE}\n")
+        else()
+            set(MODIFIED_LINES "${MODIFIED_LINES}${LINE}\n")
+        endif()
+    endforeach()
     
-    # Also comment out any references to this target
-    string(REGEX REPLACE
-        "(absl::random_internal_randen_hwaes_impl)"
-        "# absl::random_internal_randen_hwaes_impl # Disabled on ARM"
-        ABSEIL_CONTENTS
-        "${ABSEIL_CONTENTS}"
-    )
-    
-    file(WRITE "${ABSEIL_RANDOM_CMAKE_FILE}" "${ABSEIL_CONTENTS}")
+    file(WRITE "${ABSEIL_RANDOM_CMAKE_FILE}" "${MODIFIED_LINES}")
     
     message(STATUS "Patched Abseil random CMakeLists.txt to disable randen_hwaes_impl on ARM macOS")
 endif()
