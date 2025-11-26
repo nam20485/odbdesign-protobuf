@@ -72,8 +72,15 @@ jobs:
                   cmake --build . --parallel $(nproc)
                   
                   # Find protoc - it's built as part of protobuf (gRPC dependency)
+                  # protoc may be named with a version suffix (e.g., protoc-27.2.0)
                   echo "Searching for protoc..."
-                  PROTOC_PATH=$(find . -name "protoc" -type f -executable ! -name "*.cmake" 2>/dev/null | head -1)
+                  # Search in protobuf build directory - protoc is typically at _deps/grpc-build/third_party/protobuf/protoc*
+                  PROTOC_PATH=$(find . -path "*/protobuf/protoc*" -type f -executable 2>/dev/null | head -1)
+                  
+                  # If not found, try broader search
+                  if [ -z "$PROTOC_PATH" ]; then
+                      PROTOC_PATH=$(find . -name "protoc*" -type f -executable 2>/dev/null | grep -vE "\.(cmake|sh|rb|md)$" | head -1)
+                  fi
                   
                   # Find grpc_cpp_plugin
                   echo "Searching for grpc_cpp_plugin..."
