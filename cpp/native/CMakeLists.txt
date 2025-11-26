@@ -50,12 +50,15 @@ FetchContent_Declare(
 FetchContent_GetProperties(gRPC)
 if(NOT gRPC_POPULATED)
     FetchContent_Populate(gRPC)
+    # Re-query to get gRPC_SOURCE_DIR / gRPC_BINARY_DIR after populate
+    FetchContent_GetProperties(gRPC)
     # Patch c-ares before CMake config runs inside gRPC
     # Set GRPC_SOURCE_DIR for PatchCares.cmake (it expects this variable name)
+    if(NOT DEFINED gRPC_SOURCE_DIR)
+        message(FATAL_ERROR "gRPC_SOURCE_DIR not set after FetchContent_Populate")
+    endif()
     set(GRPC_SOURCE_DIR ${gRPC_SOURCE_DIR})
     include(${GRPC_PATCH_SCRIPT})
-    # Re-query to populate gRPC_SOURCE_DIR / gRPC_BINARY_DIR
-    FetchContent_GetProperties(gRPC)
 endif()
 
 add_subdirectory(${gRPC_SOURCE_DIR} ${gRPC_BINARY_DIR} EXCLUDE_FROM_ALL)
