@@ -31,7 +31,7 @@ set(gRPC_INSTALL OFF CACHE BOOL "Disable gRPC install rules" FORCE)
 set(gRPC_BUILD_TESTS OFF CACHE BOOL "Disable gRPC tests" FORCE)
 set(gRPC_BUILD_CSHARP_EXT OFF CACHE BOOL "" FORCE)
 set(gRPC_BUILD_GRPC_CSHARP_PLUGIN OFF CACHE BOOL "" FORCE)
-set(gRPC_ZLIB_PROVIDER "none" CACHE STRING "Disable zlib in gRPC to avoid macOS compilation issues" FORCE)
+set(gRPC_ZLIB_PROVIDER "module" CACHE STRING "Let gRPC fetch and build its own zlib" FORCE)
 
 set(GRPC_PATCH_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/../native/cmake/PatchCares.cmake")
 set(ABSEIL_PATCH_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/../native/cmake/PatchAbseil.cmake")
