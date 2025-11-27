@@ -228,12 +228,20 @@ jobs:
               with:
                   cmake-version: "3.27"
 
+            - name: Install zlib (Windows)
+              if: runner.os == 'Windows'
+              run: |
+                  vcpkg install zlib:x64-windows
+                  echo "CMAKE_TOOLCHAIN_FILE=$env:VCPKG_INSTALLATION_ROOT\scripts\buildsystems\vcpkg.cmake" >> $env:GITHUB_ENV
+
             - name: Configure CMake
               shell: bash
               run: |
-                  cmake -S cpp/native -B build \
-                      -DCMAKE_BUILD_TYPE=Release \
-                      -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/artifacts/native/${{ matrix.os }}"
+                  CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/artifacts/native/${{ matrix.os }}"
+                  if [ -n "$CMAKE_TOOLCHAIN_FILE" ]; then
+                      CMAKE_ARGS="$CMAKE_ARGS -DCMAKE_TOOLCHAIN_FILE=$CMAKE_TOOLCHAIN_FILE"
+                  fi
+                  cmake -S cpp/native -B build $CMAKE_ARGS
 
             - name: Build native library
               shell: bash
