@@ -40,6 +40,12 @@ mkdir -p "$CPP_OUT" "$CS_OUT"
 
 PROTO_ARGS=(--proto_path="$PROTO_DIR")
 
+# Add protobuf well-known types include path if available (for built-from-source protoc)
+if [[ -n "${PROTOBUF_INCLUDE_PATH:-}" && -d "$PROTOBUF_INCLUDE_PATH" ]]; then
+  echo "[protoc] Using protobuf include path: $PROTOBUF_INCLUDE_PATH"
+  PROTO_ARGS+=(--proto_path="$PROTOBUF_INCLUDE_PATH")
+fi
+
 echo "[protoc] Generating C++ message types"
 protoc "${PROTO_ARGS[@]}" --cpp_out="$CPP_OUT" "${ALL_PROTOS[@]}"
 

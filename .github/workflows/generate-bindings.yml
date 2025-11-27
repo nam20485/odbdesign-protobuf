@@ -107,6 +107,26 @@ jobs:
                   echo "Found protoc at: $PROTOC_PATH"
                   echo "Found grpc_cpp_plugin at: $GRPC_CPP_PLUGIN_PATH"
                   
+                  # Find protobuf well-known types include path
+                  # These are in the gRPC source tree under third_party/protobuf/src
+                  echo "Searching for protobuf well-known types..."
+                  PROTOBUF_INCLUDE_PATH=$(find . -path "*grpc-src/third_party/protobuf/src" -type d 2>/dev/null | head -1)
+                  if [ -z "$PROTOBUF_INCLUDE_PATH" ]; then
+                      # Try alternate paths
+                      PROTOBUF_INCLUDE_PATH=$(find . -path "*/protobuf/src/google/protobuf/timestamp.proto" -type f 2>/dev/null | head -1 | sed 's|/google/protobuf/timestamp.proto||')
+                  fi
+                  
+                  if [ -z "$PROTOBUF_INCLUDE_PATH" ]; then
+                      echo "Error: Could not find protobuf well-known types directory"
+                      echo "Searching for timestamp.proto:"
+                      find . -name "timestamp.proto" 2>/dev/null | head -10
+                      exit 1
+                  fi
+                  
+                  # Convert to absolute path
+                  PROTOBUF_INCLUDE_PATH=$(cd "$PROTOBUF_INCLUDE_PATH" && pwd)
+                  echo "Found protobuf include path at: $PROTOBUF_INCLUDE_PATH"
+                  
                   # Create tools directory and copy binaries
                   mkdir -p "$GITHUB_WORKSPACE/tools/bin"
                   cp "$PROTOC_PATH" "$GITHUB_WORKSPACE/tools/bin/protoc"
@@ -115,6 +135,9 @@ jobs:
                   chmod +x "$GITHUB_WORKSPACE/tools/bin/grpc_cpp_plugin"
                   
                   echo "$GITHUB_WORKSPACE/tools/bin" >> $GITHUB_PATH
+                  
+                  # Export protobuf include path for generate script
+                  echo "PROTOBUF_INCLUDE_PATH=$PROTOBUF_INCLUDE_PATH" >> $GITHUB_ENV
 
             - name: Install gRPC C# plugin
               env:
